@@ -1,30 +1,28 @@
 name: Laravel CD
 
 on:
-  push:
-    branches: [ main ]
+  workflow_run:
+    workflows: ["Laravel CI"]   # 👈 Tên workflow CI
+    types:
+      - completed
 
 jobs:
   deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout source
         uses: actions/checkout@v3
 
-      - name: Deploy to Server via SSH
-        uses: appleboy/ssh-action@v0.1.10
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
         with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            cd /var/www/laravel-app
-            git pull origin main
-            composer install --no-interaction --prefer-dist --optimize-autoloader
-            php artisan migrate --force
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
-            sudo service php8.0-fpm restart
-            sudo service nginx restart
+          php-version: '8.1'
+
+      - name: Deploy to server
+        run: |
+          echo "Deploying project..."
+          # Ví dụ deploy bằng rsync/ssh
+          # rsync -avz --exclude='.git' ./ user@server:/var/www/laravel
+          # ssh user@server "cd /var/www/laravel && php artisan migrate --force && php artisan config:clear"
